@@ -1,8 +1,10 @@
 package me.xnmk.seckill.controller;
 
 
+import me.xnmk.seckill.pojo.User;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -13,10 +15,14 @@ import org.springframework.web.bind.annotation.RestController;
  * @author xnmk
  * @since 2022-07-16
  */
-@RestController
+@Controller
 @RequestMapping("/user")
 public class UserController {
 
 
-
+    @RequestMapping("/info")
+    @ResponseBody
+    public User info(User user){
+        return user;
+    }
 }
