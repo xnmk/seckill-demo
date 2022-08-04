@@ -73,8 +73,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .setSql("stock_count = stock_count - 1")
                 .eq("goods_id", goods.getId())
                 .gt("stock_count", 0));
-        // 没成功则直接返回
-        if (!result) return null;
+        // 判断是否有库存
+        if (seckillGoods.getStockCount() < 1) {
+            redisTemplate.opsForValue().set("isStockEmpty:" + goods.getId(), "0");
+            return null;
+        }
 
         // 生成订单
         Order order = new Order();
