@@ -14,19 +14,23 @@ import me.xnmk.seckill.service.IGoodsService;
 import me.xnmk.seckill.service.IOrderService;
 import me.xnmk.seckill.service.ISeckillGoodsService;
 import me.xnmk.seckill.service.ISeckillOrderService;
+import me.xnmk.seckill.utils.MD5Util;
+import me.xnmk.seckill.utils.UUIDUtil;
 import me.xnmk.seckill.vo.GoodsVo;
 import me.xnmk.seckill.vo.OrderDetailVo;
 import me.xnmk.seckill.vo.RespBeanEnum;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
- *  服务实现类
+ * 服务实现类
  * </p>
  *
  * @author xnmk
@@ -55,6 +59,20 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(Long.valueOf(order.getGoodsId()));
         OrderDetailVo orderDetailVo = new OrderDetailVo(order, goodsVo);
         return orderDetailVo;
+    }
+
+    @Override
+    public String createPath(User user, Long goodsId) {
+        String str = MD5Util.md5(UUIDUtil.uuid() + "123456");
+        redisTemplate.opsForValue().set("seckillPath:" + user.getId() + ":" + goodsId, str, 60, TimeUnit.SECONDS);
+        return str;
+    }
+
+    @Override
+    public boolean checkPath(User user, Long goodsId, String path) {
+        if (goodsId < 0 || StringUtils.isEmpty(path)) return false;
+        String redisPath = (String)redisTemplate.opsForValue().get("seckillPath:" + user.getId() + ":" + goodsId);
+        return redisPath.equals(path);
     }
 
     @Override

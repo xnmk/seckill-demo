@@ -36,22 +36,22 @@
             <td id="startTime"></td>
             <td>
                 <input type="hidden" id="remainSeconds" th:value="${remainSeconds}"/>
-<!--                <span th:if="${secKillStatus eq 0}">秒杀倒计时：-->
-<!--                    <span id="countDown" th:text="${remainSeconds}"></span>秒-->
-<!--                </span>-->
-<!--                <span th:if="${secKillStatus eq 1}">秒杀进行中</span>-->
-<!--                <span th:if="${secKillStatus eq 2}">秒杀已结束</span>-->
+                <!--                <span th:if="${secKillStatus eq 0}">秒杀倒计时：-->
+                <!--                    <span id="countDown" th:text="${remainSeconds}"></span>秒-->
+                <!--                </span>-->
+                <!--                <span th:if="${secKillStatus eq 1}">秒杀进行中</span>-->
+                <!--                <span th:if="${secKillStatus eq 2}">秒杀已结束</span>-->
                 <span id="seckillTip"></span>
             </td>
             <td>
-<!--                <form id="seckillForm" method="post"-->
-<!--                      action="/seckill/doSeckill">-->
-<!--                    <button class="btn btn-primary btn-block" type="submit" id="buyButton">-->
-<!--                        立即秒杀-->
-<!--                    </button>-->
-<!--                    <input type="hidden" name="goodsId" id="goodsId"/>-->
-<!--                </form>-->
-                <button class="btn btn-primary btn-block" type="button" id="buyButton" onclick="doSeckill()">立即秒杀
+                <!--                <form id="seckillForm" method="post"-->
+                <!--                      action="/seckill/doSeckill">-->
+                <!--                    <button class="btn btn-primary btn-block" type="submit" id="buyButton">-->
+                <!--                        立即秒杀-->
+                <!--                    </button>-->
+                <!--                    <input type="hidden" name="goodsId" id="goodsId"/>-->
+                <!--                </form>-->
+                <button class="btn btn-primary btn-block" type="button" id="buyButton" onclick="getSeckillPath()">立即秒杀
                     <input type="hidden" name="goodsId" id="goodsId"/>
                 </button>
             </td>
@@ -77,22 +77,45 @@
         getDetails()
     });
 
+    function getSeckillPath() {
+        var goodsId = $("#goodsId").val();
+        g_showLoading();
+        $.ajax({
+            url: "/seckill/path",
+            type: "GET",
+            data: {
+                goodsId: goodsId
+            },
+            success: function (data) {
+                if (data.code == 200) {
+                    var path = data.obj;
+                    doSeckill(path);
+                } else {
+                    layer.msg(data.message);
+                }
+            },
+            error: function () {
+                layer.msg("客户端请求错误");
+            }
+        })
+    }
+
     function doSeckill(path) {
         $.ajax({
-            url:'/seckill/doSeckill',
-            type:'POST',
-            data:{
-                goodsId:$("#goodsId").val()
+            url: '/seckill/' + path + '/doSeckill',
+            type: 'POST',
+            data: {
+                goodsId: $("#goodsId").val()
             },
-            success:function(data) {
-                if(data.code==200) {
+            success: function (data) {
+                if (data.code == 200) {
                     // window.location.href="/orderDetail.htm?orderId="+data.obj.id;
                     getResult($("#goodsId").val());
                 } else {
                     layer.msg(data.message);
                 }
             },
-            error:function() {
+            error: function () {
                 layer.msg("客户端请求错误");
             }
         })
@@ -101,13 +124,13 @@
     function getResult(goodsId) {
         g_showLoading();
         $.ajax({
-            url:"/seckill/result",
-            type:"GET",
+            url: "/seckill/result",
+            type: "GET",
             data: {
-                goodsId:goodsId,
+                goodsId: goodsId,
             },
             success: function (data) {
-                if(data.code == 200) {
+                if (data.code == 200) {
                     var result = data.obj;
                     if (result < 0) {
                         layer.msg("对不起，秒杀失败！")
@@ -116,13 +139,13 @@
                             getResult(goodsId);
                         }, 50);
                     } else {
-                        layer.confirm("恭喜你，秒杀成功！查看订单吗？",{btn:["确定", "取消"]},
-                        function () {
-                            window.location.href="/orderDetail.htm?orderId=" + result;
-                        }),
-                        function () {
-                            layer.close();
-                        }
+                        layer.confirm("恭喜你，秒杀成功！查看订单吗？", {btn: ["确定", "取消"]},
+                            function () {
+                                window.location.href = "/orderDetail.htm?orderId=" + result;
+                            }),
+                            function () {
+                                layer.close();
+                            }
                     }
                 }
             },
@@ -135,15 +158,15 @@
     function getDetails() {
         var goodsId = g_getQueryString("goodsId");
         $.ajax({
-            url:'/goods/detail/' + goodsId,
-            type:'GET',
-            success:function (data) {
-                if (data.code==200) {
+            url: '/goods/detail/' + goodsId,
+            type: 'GET',
+            success: function (data) {
+                if (data.code == 200) {
                     render(data.obj);
                     countDown()
                 }
             },
-            error:function () {
+            error: function () {
                 layer.msg("客户端请求出错");
             }
 
@@ -154,11 +177,11 @@
         var user = detail.user;
         var goods = detail.goodsVo;
         var remainSeconds = detail.remainSeconds;
-        if(user) {
+        if (user) {
             $("#userTip").hide();
         }
         $("#goodsName").text(goods.goodsName);
-        $("#goodsImg").attr("src",goods.goodsImg);
+        $("#goodsImg").attr("src", goods.goodsImg);
         $("#startTime").text(new Date(goods.startDate).format("yyyy-MM-dd HH:mm:ss"));
         $("#remainSeconds").val(remainSeconds);
         $("#goodsId").val(goods.id);

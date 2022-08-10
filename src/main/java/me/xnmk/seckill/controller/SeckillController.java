@@ -21,15 +21,14 @@ import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author:xnmk_zhan
@@ -73,7 +72,7 @@ public class SeckillController implements InitializingBean {
             model.addAttribute("errmsg", RespBeanEnum.HAS_SECKILL.getMessage());
             return "secKillFail";
         }
-        Order order = orderService.seckill(user,goodsVo);
+        Order order = orderService.seckill(user, goodsVo);
         model.addAttribute("order", order);
         model.addAttribute("goods", goodsVo);
         return "orderDetail";
@@ -81,18 +80,22 @@ public class SeckillController implements InitializingBean {
 
     /**
      * 秒杀
-     * @param model
+     *
+     * @param path
      * @param user
      * @param goodsId
      * @return
      */
-    @PostMapping("/doSeckill")
+    @PostMapping("/{path}/doSeckill")
     @ResponseBody
-    public RespBean doSeckill(Model model, User user, Long goodsId) {
+    public RespBean doSeckill(@PathVariable String path, User user, Long goodsId) {
         if (user == null) return RespBean.error(RespBeanEnum.USER_TIME_OUT);
-        // GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(goodsId);
+        // 校验接口
+        boolean check = orderService.checkPath(user, goodsId, path);
+        if (!check) {
+            return RespBean.error(RespBeanEnum.PATH_ERROR);
+        }
 
-        ValueOperations valueOperations = redisTemplate.opsForValue();
         // 判断是否重复抢购
         SeckillOrder seckillOrder = (SeckillOrder) redisTemplate.opsForValue().get("order:" + user.getId() + ":" + goodsId);
         if (seckillOrder != null) {
@@ -152,7 +155,33 @@ public class SeckillController implements InitializingBean {
     }
 
     /**
+     * 获取秒杀地址
+     *
+     * @param user
+     * @param goodsId
+     * @return
+     */
+    @GetMapping("/path")
+    @ResponseBody
+    public RespBean getPath(User user, Long goodsId, HttpServletRequest request) {
+        if (user == null) return RespBean.error(RespBeanEnum.USER_TIME_OUT);
+        String uri = request.getRequestURI();
+        ValueOperations valueOperations = redisTemplate.opsForValue();
+        Integer count = (Integer) valueOperations.get(uri + ":" + user.getId());
+        if (count == null) {
+            valueOperations.set(uri + ":" + user.getId(), 1, 5, TimeUnit.SECONDS);
+        } else if (count < 5) {
+            valueOperations.increment(uri + ":" + user.getId());
+        } else {
+            return RespBean.error(RespBeanEnum.REQUEST_FAST);
+        }
+        String str = orderService.createPath(user, goodsId);
+        return RespBean.success(str);
+    }
+
+    /**
      * 系统初始化时，将商品库存加载入 Redis
+     *
      * @throws Exception
      */
     @Override
