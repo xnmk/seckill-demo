@@ -34,8 +34,6 @@ import java.util.concurrent.TimeUnit;
 public class GoodsController {
 
     @Autowired
-    private IUserService userService;
-    @Autowired
     private IGoodsService goodsService;
     @Autowired
     private RedisTemplate redisTemplate;
@@ -52,7 +50,7 @@ public class GoodsController {
     @RequestMapping(value = "/toList", produces = "text/html;charset=utf-8")
     @ResponseBody
     public String toList(Model model, User user, HttpServletRequest request, HttpServletResponse response) {
-        // 从redis获取页面，如果不为空则返回页面
+        // 从 Redis 获取页面，如果不为空则返回页面
         ValueOperations valueOperations = redisTemplate.opsForValue();
         String html = (String) valueOperations.get("goodsList");
         if (!StringUtils.isEmpty(html)) {

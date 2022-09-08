@@ -15,6 +15,7 @@ import me.xnmk.seckill.service.IOrderService;
 import me.xnmk.seckill.service.ISeckillGoodsService;
 import me.xnmk.seckill.service.ISeckillOrderService;
 import me.xnmk.seckill.utils.MD5Util;
+import me.xnmk.seckill.utils.RedisKeyUtil;
 import me.xnmk.seckill.utils.UUIDUtil;
 import me.xnmk.seckill.vo.GoodsVo;
 import me.xnmk.seckill.vo.OrderDetailVo;
@@ -116,9 +117,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .gt("stock_count", 0));
 
         // 将秒杀订单加入到 redis
-        redisTemplate.opsForValue().set("order:" + user.getId() + ":" + goods.getId(), seckillOrder);
+        String orderKey = RedisKeyUtil.getOrderKey(user.getId(), goods.getId());
+        redisTemplate.opsForValue().set(orderKey, seckillOrder);
         // 释放分布式锁
-        redisTemplate.execute(lockScript, Collections.singletonList("lock:" + goods.getId() + ":" + user.getId()), user.getId());
+        String lockKey = RedisKeyUtil.getLockKey(goods.getId().longValue(), user.getId());
+        redisTemplate.execute(lockScript, Collections.singletonList(lockKey), user.getId());
 
         return order;
     }

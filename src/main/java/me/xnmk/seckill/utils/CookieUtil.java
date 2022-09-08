@@ -7,9 +7,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 
-/**
- * @Description: Cookie Util
- */
 public final class CookieUtil {
     /**
      * 得到Cookie的值, 不编码

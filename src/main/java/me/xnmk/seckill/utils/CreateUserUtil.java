@@ -38,24 +38,10 @@ public class CreateUserUtil {
             users.add(user);
         }
         System.out.println("create user");
-        //插入数据库
-        // Connection conn = getConn();
-        // String sql = "insert into t_user(login_count, nickname, register_date, slat, password, id)values(?,?,?,?,?,?)";
-        // PreparedStatement pstmt = conn.prepareStatement(sql);
-        // for (int i = 0; i < users.size(); i++) {
-        // 	User user = users.get(i);
-        // 	pstmt.setInt(1, user.getLoginCount());
-        // 	pstmt.setString(2, user.getNickname());
-        // 	pstmt.setTimestamp(3, new Timestamp(user.getRegisterDate().getTime()));
-        // 	pstmt.setString(4, user.getSlat());
-        // 	pstmt.setString(5, user.getPassword());
-        // 	pstmt.setLong(6, user.getId());
-        // 	pstmt.addBatch();
-        // }
-        // pstmt.executeBatch();
-        // pstmt.close();
-        // conn.close();
-        // System.out.println("insert to db");
+
+        // 插入数据库（第一次时使用）
+        // insertToDB(users);
+
         // 登录，生成UserTicket
         String urlString = "http://localhost:8080/login/doLogin";
         File file = new File("C:\\Users\\29348\\Desktop\\config.txt");
@@ -101,6 +87,12 @@ public class CreateUserUtil {
         System.out.println("over");
     }
 
+    /**
+     * 获得数据库连接
+     *
+     * @return
+     * @throws Exception
+     */
     private static Connection getConn() throws Exception {
         String url = "jdbc:mysql://localhost:3306/seckill?characterEncoding=utf-8&useSSL=false&serverTimezone=Hongkong";
         String username = "root";
@@ -110,7 +102,34 @@ public class CreateUserUtil {
         return DriverManager.getConnection(url, username, password);
     }
 
+    /**
+     * 将用户信息插入到数据库
+     * @param users
+     * @throws Exception
+     */
+    private static void insertToDB(List<User> users) throws Exception {
+        // 生成用户插入数据库（第一次使用）
+        Connection conn = getConn();
+        String sql = "insert into t_user(login_count, nickname, register_date, slat, password, id)values(?,?,?,?,?,?)";
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        for (int i = 0; i < users.size(); i++) {
+            User user = users.get(i);
+            pstmt.setInt(1, user.getLoginCount());
+            pstmt.setString(2, user.getNickname());
+            pstmt.setTimestamp(3, new Timestamp(user.getRegisterDate().getTime()));
+            pstmt.setString(4, user.getSlat());
+            pstmt.setString(5, user.getPassword());
+            pstmt.setLong(6, user.getId());
+            pstmt.addBatch();
+        }
+        pstmt.executeBatch();
+        pstmt.close();
+        conn.close();
+        System.out.println("insert to db");
+    }
+
     public static void main(String[] args) throws Exception {
+        // 生成 5000 个用户凭证
         createUser(5000);
     }
 }

@@ -7,6 +7,7 @@ import me.xnmk.seckill.pojo.SeckillOrder;
 import me.xnmk.seckill.pojo.User;
 import me.xnmk.seckill.service.IGoodsService;
 import me.xnmk.seckill.service.IOrderService;
+import me.xnmk.seckill.utils.RedisKeyUtil;
 import me.xnmk.seckill.vo.GoodsVo;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +42,8 @@ public class MQReceiver {
             return;
         }
         // 再次判断是否重复秒杀
-        SeckillOrder seckillOrder = (SeckillOrder) redisTemplate.opsForValue().get("order:" + user.getId() + ":" + goodsId);
+        String orderKey = RedisKeyUtil.getOrderKey(user.getId(), goodsId.intValue());
+        SeckillOrder seckillOrder = (SeckillOrder) redisTemplate.opsForValue().get(orderKey);
         if (seckillOrder != null) {
             return;
         }

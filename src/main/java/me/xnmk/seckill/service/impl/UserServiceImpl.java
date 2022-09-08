@@ -7,6 +7,7 @@ import me.xnmk.seckill.pojo.User;
 import me.xnmk.seckill.service.IUserService;
 import me.xnmk.seckill.utils.CookieUtil;
 import me.xnmk.seckill.utils.MD5Util;
+import me.xnmk.seckill.utils.RedisKeyUtil;
 import me.xnmk.seckill.utils.UUIDUtil;
 import me.xnmk.seckill.vo.LoginVo;
 import me.xnmk.seckill.vo.RespBean;
@@ -38,7 +39,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Override
     public RespBean doLogin(LoginVo loginVo, HttpServletRequest request, HttpServletResponse response) {
         Long mobile = Long.valueOf(loginVo.getMobile());
-        String password = loginVo.getPassword();
 
         // 用户是否存在
         User user = userMapper.selectById(mobile);
@@ -53,7 +53,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
         // 生成Cookie
         String ticket = UUIDUtil.uuid();
-        redisTemplate.opsForValue().set("user:" + ticket, user);
+        String userKey = RedisKeyUtil.getUserKey(ticket);
+        redisTemplate.opsForValue().set(userKey, user);
         CookieUtil.setCookie(request, response, "userTicket", ticket);
 
         return RespBean.success(ticket);
@@ -62,7 +63,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Override
     public User getUserByCookie(String userTicket, HttpServletRequest request, HttpServletResponse response) {
         if (StringUtils.isEmpty(userTicket)) return null;
-        User user = (User) redisTemplate.opsForValue().get("user:" + userTicket);
+        String userKey = RedisKeyUtil.getUserKey(userTicket);
+        User user = (User) redisTemplate.opsForValue().get(userKey);
         if (user != null) CookieUtil.setCookie(request, response, "userTicket", userTicket);
         return user;
     }

@@ -11,6 +11,7 @@ import me.xnmk.seckill.rabbitmq.MQSender;
 import me.xnmk.seckill.service.IGoodsService;
 import me.xnmk.seckill.service.IOrderService;
 import me.xnmk.seckill.service.ISeckillOrderService;
+import me.xnmk.seckill.utils.RedisKeyUtil;
 import me.xnmk.seckill.vo.GoodsVo;
 import me.xnmk.seckill.vo.RespBean;
 import me.xnmk.seckill.vo.RespBeanEnum;
@@ -53,9 +54,10 @@ public class SeckillController implements InitializingBean {
     @Autowired
     private MQSender sender;
 
+    /** 内存标记 */
     private Map<Long, Boolean> emptyStockMap = new HashMap<>();
 
-    //每秒放行10个请求
+    /** 令牌桶：每秒放行 2000 个请求 */
     RateLimiter rateLimiter = RateLimiter.create(2000);
 
     /**
@@ -75,18 +77,17 @@ public class SeckillController implements InitializingBean {
         if (!rateLimiter.tryAcquire(1000, TimeUnit.MILLISECONDS)) {
             return RespBean.error(RespBeanEnum.REQUEST_FAST);
         }
-
         // 校验接口
         boolean check = orderService.checkPath(user, goodsId, path);
         if (!check) {
             return RespBean.error(RespBeanEnum.PATH_ERROR);
         }
-
         // 判断是否重复抢购（分布式锁）
-        Boolean isLock = redisTemplate.opsForValue().setIfAbsent("lock:" + goodsId + ":" + user.getId(), user.getId(), 120, TimeUnit.SECONDS);
+        String lockKey = RedisKeyUtil.getLockKey(goodsId, user.getId());
+        Boolean isLock = redisTemplate.opsForValue().setIfAbsent(lockKey, user.getId(), 5, TimeUnit.SECONDS);
         if (!isLock) return RespBean.error(RespBeanEnum.HAS_SECKILL);
 
-        // 通过内存标记减少Redis访问
+        // 通过内存标记减少对Redis访问
         if (emptyStockMap.get(goodsId)) {
             return RespBean.error(RespBeanEnum.EMPTY_STOCK);
         }
@@ -131,12 +132,13 @@ public class SeckillController implements InitializingBean {
         if (user == null) return RespBean.error(RespBeanEnum.USER_TIME_OUT);
         String uri = request.getRequestURI();
         ValueOperations valueOperations = redisTemplate.opsForValue();
-        Integer count = (Integer) valueOperations.get(uri + ":" + user.getId());
+        String limitKey = RedisKeyUtil.getLimitKey(uri, user.getId());
+        Integer count = (Integer) valueOperations.get(limitKey);
         // 单用户限流
         if (count == null) {
-            valueOperations.set(uri + ":" + user.getId(), 1, 5, TimeUnit.SECONDS);
+            valueOperations.set(limitKey, 1, 5, TimeUnit.SECONDS);
         } else if (count < 5) {
-            valueOperations.increment(uri + ":" + user.getId());
+            valueOperations.increment(limitKey);
         } else {
             return RespBean.error(RespBeanEnum.REQUEST_FAST);
         }
@@ -158,7 +160,8 @@ public class SeckillController implements InitializingBean {
         goodsVoList.forEach(goodsVo -> {
             // 添加内存标记
             emptyStockMap.put(Long.valueOf(goodsVo.getId()), false);
-            redisTemplate.opsForValue().set("seckillGoods:" + goodsVo.getId(), goodsVo.getStockCount());
+            String seckillGoodsKey = RedisKeyUtil.getSeckillGoodsKey(goodsVo.getId());
+            redisTemplate.opsForValue().set(seckillGoodsKey, goodsVo.getStockCount());
         });
     }
 }
