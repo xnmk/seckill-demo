@@ -94,10 +94,15 @@ spring:
 mybatis-plus:
   configuration:
     # ???? log-impl?????
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     # ??????????????
     map-underscore-to-camel-case: true
   # ?xml??????
   type-aliases-package: me.xnmk.seckill.pojo
   # ??xml????
   mapper-locations: classpath:mapper/*.xml
+server:
+  tomcat:
+    threads:
+      max: 10000
+    max-connections: 10000

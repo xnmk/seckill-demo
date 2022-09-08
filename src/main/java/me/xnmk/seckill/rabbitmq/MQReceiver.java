@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 /**
  * @author:xnmk_zhan
  * @create:2022-08-04 15:30
- * @Description:
+ * @Description: 消息消费者
  */
 @Service
 @Slf4j
@@ -28,11 +28,6 @@ public class MQReceiver {
     private IOrderService orderService;
     @Autowired
     private RedisTemplate redisTemplate;
-
-    // @RabbitListener(queues = "queue")
-    // public void receive(Object msg) {
-    //     log.info("接收消息" + msg);
-    // }
 
     @RabbitListener(queues = "seckillQueue")
     public void receiveSeckillMessage(String message) {
@@ -52,6 +47,5 @@ public class MQReceiver {
         }
         // 下单
         orderService.seckill(user, goodsVo);
-
     }
 }

@@ -2,6 +2,7 @@ package me.xnmk.seckill.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.google.common.util.concurrent.RateLimiter;
 import me.xnmk.seckill.pojo.Order;
 import me.xnmk.seckill.pojo.SeckillMessage;
 import me.xnmk.seckill.pojo.SeckillOrder;
@@ -54,29 +55,8 @@ public class SeckillController implements InitializingBean {
 
     private Map<Long, Boolean> emptyStockMap = new HashMap<>();
 
-    @PostMapping("/doSeckill2")
-    public String doSeckill2(Model model, User user, Long goodsId) {
-        if (user == null) return "login";
-        model.addAttribute("user", user);
-        GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(goodsId);
-        // 判断库存
-        if (goodsVo.getStockCount() < 1) {
-            model.addAttribute("errmsg", RespBeanEnum.EMPTY_STOCK.getMessage());
-            return "secKillFail";
-        }
-        // 判断是否重复抢购
-        SeckillOrder seckillOrder = seckillOrderService.getOne(new QueryWrapper<SeckillOrder>()
-                .eq("user_id", user.getId())
-                .eq("goods_id", goodsId));
-        if (seckillOrder != null) {
-            model.addAttribute("errmsg", RespBeanEnum.HAS_SECKILL.getMessage());
-            return "secKillFail";
-        }
-        Order order = orderService.seckill(user, goodsVo);
-        model.addAttribute("order", order);
-        model.addAttribute("goods", goodsVo);
-        return "orderDetail";
-    }
+    //每秒放行10个请求
+    RateLimiter rateLimiter = RateLimiter.create(2000);
 
     /**
      * 秒杀
@@ -90,53 +70,37 @@ public class SeckillController implements InitializingBean {
     @ResponseBody
     public RespBean doSeckill(@PathVariable String path, User user, Long goodsId) {
         if (user == null) return RespBean.error(RespBeanEnum.USER_TIME_OUT);
+
+        // 非阻塞式获得令牌
+        if (!rateLimiter.tryAcquire(1000, TimeUnit.MILLISECONDS)) {
+            return RespBean.error(RespBeanEnum.REQUEST_FAST);
+        }
+
         // 校验接口
         boolean check = orderService.checkPath(user, goodsId, path);
         if (!check) {
             return RespBean.error(RespBeanEnum.PATH_ERROR);
         }
 
-        // 判断是否重复抢购
-        SeckillOrder seckillOrder = (SeckillOrder) redisTemplate.opsForValue().get("order:" + user.getId() + ":" + goodsId);
-        if (seckillOrder != null) {
-            return RespBean.error(RespBeanEnum.HAS_SECKILL);
-        }
+        // 判断是否重复抢购（分布式锁）
+        Boolean isLock = redisTemplate.opsForValue().setIfAbsent("lock:" + goodsId + ":" + user.getId(), user.getId(), 120, TimeUnit.SECONDS);
+        if (!isLock) return RespBean.error(RespBeanEnum.HAS_SECKILL);
+
         // 通过内存标记减少Redis访问
         if (emptyStockMap.get(goodsId)) {
             return RespBean.error(RespBeanEnum.EMPTY_STOCK);
         }
         // 预减库存
-        // Long stock = valueOperations.decrement("seckillGoods:" + goodsId);
         Long stock = (Long) redisTemplate.execute(script, Collections.singletonList("seckillGoods:" + goodsId), Collections.EMPTY_LIST);
         if (stock < 0) {
             emptyStockMap.put(goodsId, true);
-            // valueOperations.increment("seckillGoods:" + goodsId);
             return RespBean.error(RespBeanEnum.EMPTY_STOCK);
         }
         // 下单
         SeckillMessage seckillMessage = new SeckillMessage(user, goodsId);
         sender.sendSeckillMessage(JSON.toJSONString(seckillMessage));
-        // Order order = orderService.seckill(user,goodsVo);
+
         return RespBean.success(0);
-
-        // 判断库存
-        // if (goodsVo.getStockCount() < 1) {
-        //     return RespBean.error(RespBeanEnum.EMPTY_STOCK);
-        // }
-
-        // SeckillOrder seckillOrder = seckillOrderService.getOne(new QueryWrapper<SeckillOrder>()
-        //         .eq("user_id", user.getId())
-        //         .eq("goods_id", goodsId));
-        // 判断是否重复抢购
-        // SeckillOrder seckillOrder = (SeckillOrder) redisTemplate.opsForValue().get("order:" + user.getId() + ":" + goodsId);
-        // if (seckillOrder != null) {
-        //     return RespBean.error(RespBeanEnum.HAS_SECKILL);
-        // }
-        //
-        // Order order = orderService.seckill(user,goodsVo);
-        // return RespBean.success(order);
-
-        // return null;
     }
 
     /**
@@ -168,6 +132,7 @@ public class SeckillController implements InitializingBean {
         String uri = request.getRequestURI();
         ValueOperations valueOperations = redisTemplate.opsForValue();
         Integer count = (Integer) valueOperations.get(uri + ":" + user.getId());
+        // 单用户限流
         if (count == null) {
             valueOperations.set(uri + ":" + user.getId(), 1, 5, TimeUnit.SECONDS);
         } else if (count < 5) {
@@ -191,6 +156,7 @@ public class SeckillController implements InitializingBean {
             return;
         }
         goodsVoList.forEach(goodsVo -> {
+            // 添加内存标记
             emptyStockMap.put(Long.valueOf(goodsVo.getId()), false);
             redisTemplate.opsForValue().set("seckillGoods:" + goodsVo.getId(), goodsVo.getStockCount());
         });

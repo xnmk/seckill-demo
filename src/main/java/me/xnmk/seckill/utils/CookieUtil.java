@@ -8,8 +8,6 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 
 /**
- * @author:xnmk_zhan
- * @create:2022-07-17 16:17
  * @Description: Cookie Util
  */
 public final class CookieUtil {
@@ -58,7 +56,7 @@ public final class CookieUtil {
     }
 
     /**
-     * 得到Cookie的值,
+     * 得到Cookie的值
      *
      * @param request
      * @param cookieName

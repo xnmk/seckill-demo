@@ -40,4 +40,12 @@ public class RedisConfig {
         redisScript.setResultType(Long.class);
         return redisScript;
     }
+
+    @Bean
+    public DefaultRedisScript<Boolean> lockScript() {
+        DefaultRedisScript<Boolean> redisScript = new DefaultRedisScript<>();
+        redisScript.setLocation(new ClassPathResource("lock.lua"));
+        redisScript.setResultType(Boolean.class);
+        return redisScript;
+    }
 }

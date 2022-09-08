@@ -20,7 +20,7 @@ import java.util.Random;
 /**
  * @author:xnmk_zhan
  * @create:2022-07-19 19:41
- * @Description: 生成用户工具类
+ * @Description: 生成用户工具类（供压测场景多用户抢购时使用）
  */
 public class CreateUserUtil {
 

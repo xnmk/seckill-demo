@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 /**
  * @author:xnmk_zhan
  * @create:2022-08-04 15:28
- * @Description:
+ * @Description: 消息生成者
  */
 @Service
 @Slf4j

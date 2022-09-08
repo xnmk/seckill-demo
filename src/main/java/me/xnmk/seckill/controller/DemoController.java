@@ -33,8 +33,6 @@ public class DemoController {
         redisTemplate.opsForValue().set("name", "lucy");
         //从redis获取值
         String name = (String) redisTemplate.opsForValue().get("name");
-        // System.out.println(name);
         return name;
-
     }
 }
