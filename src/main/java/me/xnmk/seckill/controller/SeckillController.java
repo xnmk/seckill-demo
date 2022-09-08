@@ -54,18 +54,22 @@ public class SeckillController implements InitializingBean {
     @Autowired
     private MQSender sender;
 
-    /** 内存标记 */
+    /**
+     * 内存标记
+     */
     private Map<Long, Boolean> emptyStockMap = new HashMap<>();
 
-    /** 令牌桶：每秒放行 2000 个请求 */
+    /**
+     * 令牌桶：每秒放行 2000 个请求
+     */
     RateLimiter rateLimiter = RateLimiter.create(2000);
 
     /**
      * 秒杀
      *
-     * @param path
-     * @param user
-     * @param goodsId
+     * @param path    地址
+     * @param user    用户信息
+     * @param goodsId 商品id
      * @return
      */
     @PostMapping("/{path}/doSeckill")
@@ -107,8 +111,8 @@ public class SeckillController implements InitializingBean {
     /**
      * 获取秒杀结果
      *
-     * @param user
-     * @param goodsId
+     * @param user    用户信息
+     * @param goodsId 商品id
      * @return
      */
     @GetMapping("/result")
@@ -122,8 +126,8 @@ public class SeckillController implements InitializingBean {
     /**
      * 获取秒杀地址
      *
-     * @param user
-     * @param goodsId
+     * @param user    用户信息
+     * @param goodsId 商品id
      * @return
      */
     @GetMapping("/path")

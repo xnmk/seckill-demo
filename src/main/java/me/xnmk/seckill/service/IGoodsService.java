@@ -19,7 +19,7 @@ public interface IGoodsService extends IService<Goods> {
     /**
      * 获取商品列表
      *
-     * @return
+     * @return 商品列表
      */
     List<GoodsVo> findGoodVo();
 
@@ -27,7 +27,7 @@ public interface IGoodsService extends IService<Goods> {
      * 获得商品详情
      *
      * @param goodsId 商品id
-     * @return
+     * @return 商品信息
      */
     GoodsVo findGoodsVoByGoodsId(Long goodsId);
 }

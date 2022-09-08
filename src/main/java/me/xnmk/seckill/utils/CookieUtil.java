@@ -10,10 +10,6 @@ import java.net.URLEncoder;
 public final class CookieUtil {
     /**
      * 得到Cookie的值, 不编码
-     *
-     * @param request
-     * @param cookieName
-     * @return
      */
     public static String getCookieValue(HttpServletRequest request, String
             cookieName) {
@@ -21,11 +17,7 @@ public final class CookieUtil {
     }
 
     /**
-     * 得到Cookie的值,
-     *
-     * @param request
-     * @param cookieName
-     * @return
+     * 得到Cookie的值
      */
     public static String getCookieValue(HttpServletRequest request, String
             cookieName, boolean isDecoder) {
@@ -54,10 +46,6 @@ public final class CookieUtil {
 
     /**
      * 得到Cookie的值
-     *
-     * @param request
-     * @param cookieName
-     * @return
      */
     public static String getCookieValue(HttpServletRequest request, String
             cookieName, String encodeString) {

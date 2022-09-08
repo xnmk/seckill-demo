@@ -43,8 +43,8 @@ public class GoodsController {
     /**
      * 跳转商品页
      *
-     * @param model
-     * @param user
+     * @param model 模板
+     * @param user  用户信息
      * @return
      */
     @RequestMapping(value = "/toList", produces = "text/html;charset=utf-8")
@@ -70,62 +70,13 @@ public class GoodsController {
     /**
      * 跳转商品详情页
      *
-     * @param model
-     * @param user
-     * @param goodsId
-     * @return
-     */
-    @RequestMapping(value = "/toDetail2/{goodsId}", produces = "text/html;charset=utf-8")
-    @ResponseBody
-    public String toDetail2(Model model, User user, @PathVariable("goodsId") Long goodsId,
-                            HttpServletRequest request, HttpServletResponse response) {
-        // 从redis获取页面，如果不为空则返回页面
-        ValueOperations valueOperations = redisTemplate.opsForValue();
-        String html = (String) valueOperations.get("goodsDetail:" + goodsId);
-        if (!StringUtils.isEmpty(html)) {
-            return html;
-        }
-
-        model.addAttribute("user", user);
-        GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(goodsId);
-        Date startDate = goodsVo.getStartDate();
-        Date endDate = goodsVo.getEndDate();
-        Date nowDate = new Date();
-        // 秒杀状态
-        int secKillStatus = 0;
-        // 秒杀倒计时
-        int remainSeconds = 0;
-        if (nowDate.before(startDate)) {
-            remainSeconds = ((int) ((startDate.getTime() - nowDate.getTime()) / 1000));
-        } else if (nowDate.after(endDate)) {
-            secKillStatus = 2;
-            remainSeconds = -1;
-        } else {
-            secKillStatus = 1;
-            remainSeconds = 0;
-        }
-        model.addAttribute("remainSeconds", remainSeconds);
-        model.addAttribute("secKillStatus", secKillStatus);
-        model.addAttribute("goods", goodsVo);
-
-        // 如果为空，手动渲染，存入 Redis 返回
-        WebContext webContext = new WebContext(request, response, request.getServletContext(), request.getLocale(), model.asMap());
-        html = thymeleafViewResolver.getTemplateEngine().process("goodsDetail", webContext);
-        if (!StringUtils.isEmpty(html)) valueOperations.set("goodsDetail:" + goodsId, html, 60, TimeUnit.SECONDS);
-        return html;
-    }
-
-    /**
-     * 跳转商品详情页
-     *
-     * @param model
-     * @param user
-     * @param goodsId
+     * @param user    用户
+     * @param goodsId 商品id
      * @return
      */
     @RequestMapping("/detail/{goodsId}")
     @ResponseBody
-    public RespBean toDetail(Model model, User user, @PathVariable("goodsId") Long goodsId) {
+    public RespBean toDetail(User user, @PathVariable("goodsId") Long goodsId) {
 
         GoodsVo goodsVo = goodsService.findGoodsVoByGoodsId(goodsId);
         Date startDate = goodsVo.getStartDate();
@@ -145,6 +96,7 @@ public class GoodsController {
             remainSeconds = 0;
         }
 
+        // 返回商品信息
         DetailVo detailVo = new DetailVo();
         detailVo.setUser(user);
         detailVo.setGoodsVo(goodsVo);

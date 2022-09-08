@@ -17,9 +17,9 @@ public interface ISeckillOrderService extends IService<SeckillOrder> {
     /**
      * 获得秒杀结果
      *
-     * @param user
-     * @param goodsId
-     * @return
+     * @param user    用户
+     * @param goodsId 商品id
+     * @return 订单id
      */
     Long getResult(User user, Long goodsId);
 }

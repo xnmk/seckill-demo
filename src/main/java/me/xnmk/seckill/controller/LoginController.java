@@ -40,7 +40,7 @@ public class LoginController {
     /**
      * 登录
      *
-     * @param loginVo
+     * @param loginVo 登录信息
      * @return
      */
     @RequestMapping("/doLogin")

@@ -14,7 +14,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class SeckillMessage {
 
+    /** 用户信息 */
     private User user;
 
+    /** 商品id */
     private Long goodsId;
 }

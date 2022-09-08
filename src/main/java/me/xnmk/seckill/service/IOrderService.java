@@ -21,7 +21,7 @@ public interface IOrderService extends IService<Order> {
      *
      * @param user  用户
      * @param goods 商品
-     * @return
+     * @return 订单信息
      */
     Order seckill(User user, GoodsVo goods);
 
@@ -29,7 +29,7 @@ public interface IOrderService extends IService<Order> {
      * 订单详情
      *
      * @param orderId 订单id
-     * @return
+     * @return 订单信息
      */
     OrderDetailVo getDetail(Long orderId);
 
@@ -38,7 +38,7 @@ public interface IOrderService extends IService<Order> {
      *
      * @param user    用户
      * @param goodsId 商品id
-     * @return
+     * @return 秒杀接口地址
      */
     String createPath(User user, Long goodsId);
 
@@ -48,7 +48,7 @@ public interface IOrderService extends IService<Order> {
      * @param user    用户
      * @param goodsId 商品id
      * @param path    地址
-     * @return
+     * @return boolean
      */
     boolean checkPath(User user, Long goodsId, String path);
 }
